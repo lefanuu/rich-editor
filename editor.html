@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>富文本编辑器</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    }
+    
+    #editor {
+      width: 100%;
+      min-height: 300px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      box-sizing: border-box;
+      outline: none;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    
+    .toolbar button {
+      margin: 4px;
+      padding: 8px 12px;
+      background-color: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .toolbar button:active {
+      background-color: #f0f0f0;
+    }
+    
+    .toolbar button.active {
+      background-color: #5C9F83;
+      color: white;
+      border-color: #5C9F83;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button onclick="execCommand('bold')" id="bold">B</button>
+    <button onclick="execCommand('italic')" id="italic"><i>I</i></button>
+    <button onclick="execCommand('underline')" id="underline"><u>U</u></button>
+    <button onclick="execCommand('formatBlock', '<h1>')" id="h1">H1</button>
+    <button onclick="execCommand('formatBlock', '<h2>')" id="h2">H2</button>
+    <button onclick="execCommand('insertUnorderedList')" id="ul">•</button>
+    <button onclick="execCommand('insertOrderedList')" id="ol">1.</button>
+  </div>
+  
+  <div id="editor" contenteditable="true"></div>
+  
+  <script>
+    // 初始化编辑器
+    document.addEventListener('DOMContentLoaded', function() {
+      // 恢复草稿内容
+      const draftContent = localStorage.getItem('editorContent');
+      if (draftContent) {
+        document.getElementById('editor').innerHTML = draftContent;
+      }
+      
+      // 自动保存
+      setInterval(function() {
+        const content = document.getElementById('editor').innerHTML;
+        localStorage.setItem('editorContent', content);
+        
+        // 向小程序发送内容
+        sendContentToMiniProgram();
+      }, 2000);
+      
+      // 监听选择变化，更新工具栏状态
+      document.addEventListener('selectionchange', updateToolbarState);
+    });
+    
+    // 执行编辑命令
+    function execCommand(command, value = null) {
+      document.execCommand(command, false, value);
+      updateToolbarState();
+    }
+    
+    // 更新工具栏状态
+    function updateToolbarState() {
+      const commands = ['bold', 'italic', 'underline'];
+      commands.forEach(cmd => {
+        const button = document.getElementById(cmd);
+        if (document.queryCommandState(cmd)) {
+          button.classList.add('active');
+        } else {
+          button.classList.remove('active');
+        }
+      });
+    }
+    
+    // 向小程序发送内容
+    function sendContentToMiniProgram() {
+      const editor = document.getElementById('editor');
+      const html = editor.innerHTML;
+      const text = editor.textContent || editor.innerText;
+      
+      // 向小程序发送消息
+      if (window.wx && window.wx.miniProgram) {
+        window.wx.miniProgram.postMessage({
+          data: {
+            type: 'content',
+            content: text,
+            html: html
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
